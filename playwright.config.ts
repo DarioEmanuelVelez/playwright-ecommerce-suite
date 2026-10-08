@@ -16,10 +16,9 @@ export default defineConfig({
   /* Reporte de resultados */
   reporter: 'html',
 
+  /* Opciones compartidas para todos los proyectos */
   use: {
-    /* Base URL común para no escribirla completa cada vez */
     baseURL: 'https://www.saucedemo.com',
-    /* Captura de traza en el primer reintento */
     trace: 'on-first-retry',
   },
 

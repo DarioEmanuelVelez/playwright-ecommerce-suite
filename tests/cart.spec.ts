@@ -81,6 +81,20 @@ test.describe('debe agregar productos al carrito y verificar la cantidad', () =>
         await expect(page.locator(".complete-header")).toHaveText(/thank you for your order/i);
     });
 
+     test.describe("debemos hacer una prueba invalida y esperar que no se pueda avanzar el checkout", () => {
+        test("debe mostrar un error al intentar avanzar el checkout sin completar los campos obligatorios", async ({ page }) => {
+            await page.goto('/checkout-step-one.html');
+
+            await page.locator("#continue").click();
+
+            await expect(page).toHaveURL(/.*checkout-step-one\.html/);
+
+            const errorMessage = page.locator('[data-test="error"]');
+            await expect(errorMessage).toBeVisible();
+            await expect(errorMessage).toHaveText(/Error: First Name is required/i);
 
 
-})
+
+        });
+        });
+});

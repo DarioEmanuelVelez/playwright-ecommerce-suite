@@ -1,100 +1,54 @@
-//1 - ingresar a la pagina de los productos con la sesion ya iniciada, storagestate.
+import { test, expect } from '../fixtures/page.fixtures';
 
-//2 - verificar que el carrito este vacio.
+test.describe('Flujo de Carrito y Checkout con POM', () => {
 
-//3- agregar 2 productos especificos al carrito.
+  test('debe agregar 2 productos y completar el checkout exitosamente', async ({ page, checkoutPage }) => {
+    // 1. Navegar con sesión inyectada
+    await page.goto('/inventory.html');
 
-//4- verificar que el carrito tenga 2 productos.
+    // 2. Precondición: carrito vacío
+    const cartBadge = page.locator('.shopping_cart_badge');
+    await expect(cartBadge).not.toBeVisible();
 
+    // 3. Agregar productos específicos
+    await page.locator('#add-to-cart-sauce-labs-backpack').click();
+    await page.locator('#add-to-cart-sauce-labs-bike-light').click();
 
+    // 4. Validar badge reactivo
+    await expect(cartBadge).toBeVisible();
+    await expect(cartBadge).toHaveText('2');
 
+    // 5. Navegar al carrito y validar items
+    await page.locator('.shopping_cart_link').click();
+    await expect(page).toHaveURL(/.*cart\.html/);
+    await expect(page.locator('.cart_item')).toHaveCount(2);
+    await expect(page.locator('.inventory_item_name', { hasText: 'Sauce Labs Backpack' })).toBeVisible();
+    await expect(page.locator('.inventory_item_name', { hasText: 'Sauce Labs Bike Light' })).toBeVisible();
 
+    // 6. Iniciar checkout e interactuar con el Page Object
+    await page.locator('#checkout').click();
+    await expect(page).toHaveURL(/.*checkout-step-one\.html/);
 
-import { test, expect } from '@playwright/test';
+    await checkoutPage.fillCustomerInformation('Dario', 'Velez', '5000');
+    await checkoutPage.clickContinue();
 
+    // 7. Resumen y confirmación final
+    await expect(page).toHaveURL(/.*checkout-step-two\.html/);
+    await checkoutPage.clickFinish();
 
+    // 8. Validación de orden completada
+    await expect(page).toHaveURL(/.*checkout-complete\.html/);
+    await expect(checkoutPage.completeHeader).toHaveText(/thank you for your order/i);
+  });
 
-test.describe('debe agregar productos al carrito y verificar la cantidad', () => {
+  test('debe mostrar un error al intentar avanzar el checkout sin completar los campos obligatorios', async ({ page, checkoutPage }) => {
+    await page.goto('/checkout-step-one.html');
 
-    test('debe agregar 2 productos al carrito y verificar la cantidad', async ({ page }) => {
+    await checkoutPage.clickContinue();
 
+    await expect(page).toHaveURL(/.*checkout-step-one\.html/);
+    await expect(checkoutPage.errorMessage).toBeVisible();
+    await expect(checkoutPage.errorMessage).toHaveText(/Error: First Name is required/i);
+  });
 
-
-        await page.goto('/inventory.html');
-
-
-
-        const cartBadge = page.locator('.shopping_cart_badge');
-
-        await expect(cartBadge).not.toBeVisible();
-
-
-
-        // 3. Agregar 2 productos específicos al carrito
-
-        // (lo hacemos a continuación)
-
-        await page.locator('#add-to-cart-sauce-labs-backpack').click();
-
-        await page.locator('#add-to-cart-sauce-labs-bike-light').click();
-
-
-
-        // 4. Verificar que el carrito tenga 2 productos
-
-        // (lo hacemos a continuación)
-
-        await expect(cartBadge).toBeVisible();
-
-        await expect(cartBadge).toHaveText('2');
-
-
-
-        // 5. Navegar al carrito
-
-        await page.locator('.shopping_cart_link').click();
-
-
-
-        // 6. Validar URL y contenido del carrito
-
-        await expect(page).toHaveURL(/.*cart\.html/);
-
-        await expect(page.locator('.cart_item')).toHaveCount(2);
-
-        await expect(page.locator('.inventory_item_name', { hasText: 'Sauce Labs Backpack' })).toBeVisible();
-
-        await expect(page.locator('.inventory_item_name', { hasText: 'Sauce Labs Bike Light' })).toBeVisible();
-
-
-        await page.locator("#checkout").click();
-        await expect(page).toHaveURL(/.*checkout-step-one\.html/);
-
-
-        await page.locator("#first-name").fill("Dario");
-        await page.locator("#last-name").fill("Velez");
-        await page.locator("#postal-code").fill("5000");
-        await page.locator("#continue").click();
-        await expect(page).toHaveURL(/.*checkout-step-two\.html/);
-        await page.locator("#finish").click();
-        await expect(page).toHaveURL(/.*checkout-complete\.html/);
-        await expect(page.locator(".complete-header")).toHaveText(/thank you for your order/i);
-    });
-
-     test.describe("debemos hacer una prueba invalida y esperar que no se pueda avanzar el checkout", () => {
-        test("debe mostrar un error al intentar avanzar el checkout sin completar los campos obligatorios", async ({ page }) => {
-            await page.goto('/checkout-step-one.html');
-
-            await page.locator("#continue").click();
-
-            await expect(page).toHaveURL(/.*checkout-step-one\.html/);
-
-            const errorMessage = page.locator('[data-test="error"]');
-            await expect(errorMessage).toBeVisible();
-            await expect(errorMessage).toHaveText(/Error: First Name is required/i);
-
-
-
-        });
-        });
 });
